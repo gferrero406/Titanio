@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Titanio — Lapbook Interactivo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,900;1,600&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --b50:#E6F1FB;--b100:#B5D4F4;--b200:#85B7EB;--b400:#378ADD;--b600:#185FA5;--b800:#0C447C;--b900:#042C53;
+  --t50:#E1F5EE;--t400:#1D9E75;--t600:#0F6E56;
+  --a50:#FAEEDA;--a400:#BA7517;--a600:#854F0B;
+  --c50:#FAECE7;--c400:#D85A30;--c600:#993C1D;
+  --p50:#EEEDFE;--p400:#7F77DD;--p600:#534AB7;
+  --g50:#F1EFE8;--g100:#D3D1C7;--g200:#B4B2A9;--g400:#888780;--g600:#5F5E5A;--g800:#444441;--g900:#2C2C2A;
+  --white:#fff;
+  --bg:#eff0f3;
+  --r-sm:6px;--r-md:10px;--r-lg:16px;--r-xl:24px;
+}
+html{scroll-behavior:smooth;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--g900);min-height:100vh;overflow-x:hidden;}
+
+/* ── CURSOR ────────────────────────────────── */
+.cursor{width:12px;height:12px;background:var(--b400);border-radius:50%;position:fixed;top:0;left:0;pointer-events:none;z-index:9999;transition:transform .15s,background .2s;mix-blend-mode:multiply;}
+.cursor-ring{width:36px;height:36px;border:1.5px solid var(--b400);border-radius:50%;position:fixed;top:0;left:0;pointer-events:none;z-index:9998;transition:transform .35s cubic-bezier(.25,.46,.45,.94),opacity .2s;opacity:.5;}
+body:hover .cursor{opacity:1;}
+
+/* ── PROGRESS BAR ──────────────────────────── */
+#progress{position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,var(--b400),var(--t400));z-index:1000;width:0%;transition:width .1s linear;border-radius:0 2px 2px 0;}
+
+/* ── NAV ───────────────────────────────────── */
+nav{position:fixed;top:0;left:0;right:0;z-index:900;padding:14px 40px;display:flex;align-items:center;justify-content:space-between;transition:background .3s,box-shadow .3s;backdrop-filter:blur(0px);}
+nav.scrolled{background:rgba(4,44,83,0.92);backdrop-filter:blur(16px);box-shadow:0 2px 24px rgba(0,0,0,.2);}
+.nav-logo{font-family:'Playfair Display',serif;font-size:20px;color:#fff;font-weight:600;opacity:.9;}
+.nav-logo span{font-family:'DM Mono',monospace;font-size:14px;color:var(--b200);margin-left:8px;}
+.nav-links{display:flex;gap:6px;}
+.nav-link{color:var(--b100);font-size:13px;font-weight:500;padding:6px 12px;border-radius:20px;cursor:pointer;transition:background .2s,color .2s;text-decoration:none;}
+.nav-link:hover{background:rgba(255,255,255,.12);color:#fff;}
+
+/* ── HERO ──────────────────────────────────── */
+.hero{background:var(--b900);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:100px 40px 60px;position:relative;overflow:hidden;}
+.hero-canvas{position:absolute;inset:0;pointer-events:none;}
+
+.hero-inner{max-width:1000px;width:100%;display:grid;grid-template-columns:auto 1fr;gap:60px;align-items:center;position:relative;z-index:2;}
+
+.element-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:var(--r-xl);padding:32px 36px;text-align:center;min-width:180px;cursor:pointer;transition:transform .3s,background .3s,box-shadow .3s;}
+.element-card:hover{transform:scale(1.04) rotate(-1deg);background:rgba(255,255,255,.1);box-shadow:0 24px 60px rgba(0,0,0,.3);}
+.ec-num{font-family:'DM Mono',monospace;font-size:16px;color:var(--b200);margin-bottom:4px;}
+.ec-sym{font-family:'Playfair Display',serif;font-size:110px;font-weight:900;color:#fff;line-height:1;margin:2px 0;transition:transform .3s;text-shadow:0 0 60px rgba(55,138,221,.4);}
+.element-card:hover .ec-sym{transform:scale(1.08);}
+.ec-name{font-size:15px;color:var(--b200);font-weight:500;}
+.ec-mass{font-family:'DM Mono',monospace;font-size:12px;color:var(--b100);margin-top:8px;opacity:.6;}
+
+.hero-text{position:relative;}
+.hero-tag-pre{font-family:'DM Mono',monospace;font-size:12px;color:var(--b400);letter-spacing:.12em;text-transform:uppercase;margin-bottom:16px;opacity:0;animation:fadeUp .6s .3s forwards;}
+.hero-h1{font-family:'Playfair Display',serif;font-size:62px;font-weight:900;color:#fff;line-height:1.05;margin-bottom:20px;opacity:0;animation:fadeUp .7s .5s forwards;}
+.hero-h1 em{color:var(--b200);font-style:italic;}
+.hero-p{font-size:17px;color:var(--b100);max-width:500px;line-height:1.7;margin-bottom:32px;opacity:0;animation:fadeUp .7s .7s forwards;}
+.hero-tags{display:flex;flex-wrap:wrap;gap:8px;opacity:0;animation:fadeUp .7s .9s forwards;}
+.htag{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:100px;padding:7px 16px;font-size:13px;font-weight:500;color:var(--b100);display:flex;align-items:center;gap:7px;transition:background .2s,transform .2s;}
+.htag:hover{background:rgba(255,255,255,.15);transform:translateY(-2px);}
+.htag i{font-size:16px;}
+
+.scroll-hint{position:absolute;bottom:32px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;z-index:2;opacity:0;animation:fadeUp .6s 1.3s forwards;}
+.scroll-hint span{font-size:11px;color:var(--b200);letter-spacing:.1em;text-transform:uppercase;}
+.scroll-arrow{width:24px;height:24px;border-right:2px solid var(--b400);border-bottom:2px solid var(--b400);transform:rotate(45deg);animation:bounceDown 1.4s infinite;}
+@keyframes bounceDown{0%,100%{transform:rotate(45deg) translateY(0);}50%{transform:rotate(45deg) translateY(5px);}}
+
+/* ── STATS ─────────────────────────────────── */
+.stats-bar{background:var(--b800);padding:0 40px;}
+.stats-inner{max-width:1000px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr);}
+.stat{padding:26px 20px;border-right:1px solid rgba(255,255,255,.08);text-align:center;transition:background .2s;}
+.stat:last-child{border-right:none;}
+.stat:hover{background:rgba(255,255,255,.06);}
+.stat-val{font-family:'DM Mono',monospace;font-size:24px;font-weight:500;color:#fff;display:block;}
+.stat-label{font-size:12px;color:var(--b200);margin-top:4px;display:block;}
+
+/* ── SECTIONS WRAPPER ──────────────────────── */
+.main{max-width:1000px;margin:0 auto;padding:56px 40px;display:flex;flex-direction:column;gap:48px;}
+
+/* ── REVEAL ON SCROLL ──────────────────────── */
+.reveal{opacity:0;transform:translateY(40px);transition:opacity .7s cubic-bezier(.25,.46,.45,.94),transform .7s cubic-bezier(.25,.46,.45,.94);}
+.reveal.visible{opacity:1;transform:translateY(0);}
+.reveal-left{opacity:0;transform:translateX(-40px);transition:opacity .7s ease,transform .7s ease;}
+.reveal-left.visible{opacity:1;transform:translateX(0);}
+.reveal-right{opacity:0;transform:translateX(40px);transition:opacity .7s ease,transform .7s ease;}
+.reveal-right.visible{opacity:1;transform:translateX(0);}
+.delay-1{transition-delay:.1s;}
+.delay-2{transition-delay:.2s;}
+.delay-3{transition-delay:.3s;}
+.delay-4{transition-delay:.4s;}
+.delay-5{transition-delay:.5s;}
+.delay-6{transition-delay:.6s;}
+
+/* ── CARD ──────────────────────────────────── */
+.card{background:var(--white);border-radius:var(--r-xl);overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,.07);transition:box-shadow .3s,transform .3s;}
+.card:hover{box-shadow:0 8px 40px rgba(0,0,0,.12);}
+.card-header{padding:32px 40px 26px;border-bottom:1px solid var(--g50);display:flex;align-items:center;gap:16px;}
+.ch-icon{width:50px;height:50px;border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;transition:transform .3s;}
+.card:hover .ch-icon{transform:rotate(-8deg) scale(1.1);}
+.ch-icon.blue{background:var(--b50);color:var(--b600);}
+.ch-icon.teal{background:var(--t50);color:var(--t600);}
+.ch-icon.amber{background:var(--a50);color:var(--a600);}
+.ch-icon.coral{background:var(--c50);color:var(--c600);}
+.ch-icon.purple{background:var(--p50);color:var(--p600);}
+.card-header h2{font-family:'Playfair Display',serif;font-size:28px;font-weight:600;color:var(--g900);}
+.card-header p{font-size:14px;color:var(--g400);margin-top:3px;}
+.card-body{padding:36px 40px;}
+
+/* ── PROPS GRID ────────────────────────────── */
+.props-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:36px;}
+.prop-item{display:flex;align-items:flex-start;gap:14px;padding:18px 20px;background:var(--g50);border-radius:var(--r-md);border-left:3px solid var(--b400);transition:transform .25s,box-shadow .25s,border-left-color .25s;}
+.prop-item:hover{transform:translateX(5px);box-shadow:0 4px 18px rgba(0,0,0,.08);}
+.prop-item.teal{border-left-color:var(--t400);}
+.prop-item.amber{border-left-color:var(--a400);}
+.prop-item.coral{border-left-color:var(--c400);}
+.prop-item.purple{border-left-color:var(--p400);}
+.prop-item i{font-size:22px;color:var(--b600);flex-shrink:0;margin-top:1px;}
+.prop-item.teal i{color:var(--t600);}
+.prop-item.amber i{color:var(--a600);}
+.prop-item.coral i{color:var(--c600);}
+.prop-item.purple i{color:var(--p600);}
+.prop-item p{font-size:14.5px;color:var(--g800);line-height:1.55;}
+
+/* ── COMPARE BARS ──────────────────────────── */
+.compare-h3{font-size:16px;font-weight:600;color:var(--g900);margin-bottom:20px;display:flex;align-items:center;gap:8px;}
+.compare-h3 i{color:var(--b600);}
+.bar-row{display:flex;align-items:center;gap:16px;margin-bottom:16px;}
+.bar-name{font-size:14px;font-weight:500;color:var(--g800);width:80px;flex-shrink:0;}
+.bar-track{flex:1;height:20px;background:var(--g50);border-radius:10px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:10px;display:flex;align-items:center;justify-content:flex-end;padding-right:12px;width:0;transition:width 1.2s cubic-bezier(.25,.46,.45,.94);}
+.bar-pct{font-size:12px;font-weight:600;color:#fff;}
+.bar-note{font-size:12px;color:var(--g400);width:110px;flex-shrink:0;}
+
+/* ── TIMELINE ──────────────────────────────── */
+.timeline{position:relative;padding-left:44px;}
+.timeline::before{content:'';position:absolute;left:16px;top:18px;bottom:18px;width:2px;background:linear-gradient(to bottom,var(--b600),var(--b100));border-radius:1px;}
+.tl-event{position:relative;margin-bottom:36px;cursor:default;}
+.tl-event:last-child{margin-bottom:0;}
+.tl-dot{position:absolute;left:-35px;top:7px;width:18px;height:18px;border-radius:50%;background:var(--b600);border:3px solid var(--white);box-shadow:0 0 0 2px var(--b400);transition:transform .25s,box-shadow .25s;}
+.tl-event:hover .tl-dot{transform:scale(1.35);box-shadow:0 0 0 3px var(--b400),0 0 16px var(--b200);}
+.tl-year{font-family:'DM Mono',monospace;font-size:11px;font-weight:500;color:var(--b600);text-transform:uppercase;letter-spacing:.09em;margin-bottom:6px;}
+.tl-title{font-size:19px;font-weight:600;color:var(--g900);margin-bottom:7px;transition:color .2s;}
+.tl-event:hover .tl-title{color:var(--b600);}
+.tl-desc{font-size:15px;color:var(--g600);line-height:1.65;max-width:640px;}
+
+/* ── NATURALEZA ────────────────────────────── */
+.nat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px;}
+.nat-block{background:var(--g50);border-radius:var(--r-md);padding:22px;transition:transform .25s,box-shadow .25s;}
+.nat-block:hover{transform:translateY(-4px);box-shadow:0 8px 28px rgba(0,0,0,.1);}
+.nat-block h4{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--g400);margin-bottom:14px;display:flex;align-items:center;gap:7px;}
+.nat-block ul{list-style:none;display:flex;flex-direction:column;gap:8px;}
+.nat-block ul li{font-size:14px;color:var(--g800);display:flex;align-items:center;gap:10px;}
+.chip{width:8px;height:8px;border-radius:2px;flex-shrink:0;}
+.chip.blue{background:var(--b600);}
+.chip.teal{background:var(--t400);}
+.chip.purple{background:var(--p400);}
+.chip.coral{background:var(--c400);}
+.abund{background:var(--b50);border-radius:var(--r-md);padding:18px 22px;display:flex;align-items:center;gap:14px;font-size:14.5px;color:var(--b800);font-weight:500;border-left:3px solid var(--b400);}
+.abund i{font-size:24px;color:var(--b600);flex-shrink:0;}
+
+/* ── USOS ──────────────────────────────────── */
+.usos-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.uso-card{border-radius:var(--r-lg);overflow:hidden;cursor:pointer;border:1.5px solid #e8e5de;transition:border-color .25s,transform .25s,box-shadow .25s;background:var(--white);}
+.uso-card:hover{border-color:var(--b400);transform:translateY(-4px);box-shadow:0 12px 32px rgba(24,95,165,.14);}
+.uso-card.open{border-color:var(--b600);box-shadow:0 12px 36px rgba(24,95,165,.2);}
+.uc-top{padding:24px 22px 18px;}
+.uc-icon-wrap{width:50px;height:50px;border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:14px;transition:transform .3s;}
+.uso-card:hover .uc-icon-wrap{transform:rotate(-6deg) scale(1.1);}
+.uc-icon-wrap.blue{background:var(--b50);color:var(--b600);}
+.uc-icon-wrap.teal{background:var(--t50);color:var(--t600);}
+.uc-icon-wrap.amber{background:var(--a50);color:var(--a600);}
+.uc-icon-wrap.coral{background:var(--c50);color:var(--c600);}
+.uc-icon-wrap.purple{background:var(--p50);color:var(--p600);}
+.uc-name{font-size:16px;font-weight:600;color:var(--g900);margin-bottom:6px;}
+.uc-short{font-size:13px;color:var(--g400);line-height:1.45;}
+.uc-detail{max-height:0;overflow:hidden;transition:max-height .45s cubic-bezier(.25,.46,.45,.94),padding .3s;}
+.uc-detail.open{max-height:300px;padding:16px 22px 22px;}
+.uc-detail-inner{border-top:1px solid var(--b50);padding-top:14px;}
+.uc-detail ul{list-style:none;display:flex;flex-direction:column;gap:7px;}
+.uc-detail ul li{font-size:13.5px;color:var(--b800);display:flex;align-items:flex-start;gap:9px;line-height:1.5;}
+.uc-detail ul li::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--b400);flex-shrink:0;margin-top:6px;}
+.uso-toggle{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--g100);display:flex;align-items:center;justify-content:center;float:right;margin-top:-2px;transition:transform .3s,background .2s,border-color .2s;}
+.uso-card.open .uso-toggle{transform:rotate(180deg);background:var(--b50);border-color:var(--b400);}
+.uso-toggle i{font-size:14px;color:var(--g400);}
+.uso-card.open .uso-toggle i{color:var(--b600);}
+
+/* ── OXIDO ─────────────────────────────────── */
+.reaction-box{background:var(--b900);border-radius:var(--r-lg);padding:40px;text-align:center;margin-bottom:32px;position:relative;overflow:hidden;cursor:pointer;transition:transform .3s;}
+.reaction-box:hover{transform:scale(1.01);}
+.reaction-box::before{content:'TiO₂';font-family:'Playfair Display',serif;font-size:200px;font-weight:900;color:rgba(255,255,255,.03);position:absolute;right:-20px;bottom:-30px;pointer-events:none;}
+.reaction-eq{font-family:'Playfair Display',serif;font-size:52px;font-weight:600;color:#fff;margin-bottom:10px;position:relative;z-index:1;}
+.reaction-eq sub{font-family:'DM Sans',sans-serif;font-size:30px;vertical-align:sub;}
+.reaction-label{font-size:15px;color:var(--b200);position:relative;z-index:1;}
+.atoms-anim{display:flex;justify-content:center;gap:20px;margin-top:20px;position:relative;z-index:1;}
+.atom{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:14px;font-weight:500;animation:pulse 2s infinite;}
+.atom.ti{background:rgba(55,138,221,.25);border:2px solid var(--b400);color:#fff;animation-delay:0s;}
+.atom.op{background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.2);color:rgba(255,255,255,.5);font-size:20px;align-self:center;}
+.atom.ox{background:rgba(29,158,117,.2);border:2px solid var(--t400);color:#fff;animation-delay:.3s;}
+.atom.ar{background:rgba(186,117,23,.2);border:2px solid var(--a400);color:#fff;animation-delay:.6s;}
+@keyframes pulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(55,138,221,.4);}50%{transform:scale(1.07);box-shadow:0 0 0 8px rgba(55,138,221,0);}}
+.tio2-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:24px;}
+.tio2-item{background:var(--g50);border-radius:var(--r-md);padding:20px 14px;text-align:center;transition:transform .25s,background .25s,box-shadow .25s;cursor:default;}
+.tio2-item:hover{transform:translateY(-4px);background:var(--b50);box-shadow:0 8px 24px rgba(24,95,165,.12);}
+.tio2-item i{font-size:32px;color:var(--b600);margin-bottom:10px;display:block;transition:transform .3s;}
+.tio2-item:hover i{transform:scale(1.2) rotate(-5deg);}
+.tio2-item p{font-size:13px;color:var(--g800);font-weight:500;line-height:1.4;}
+
+/* ── DATOS CURIOSOS ────────────────────────── */
+.facts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.fact-card{background:var(--g50);border-radius:var(--r-md);padding:22px;display:flex;gap:18px;align-items:flex-start;border:1.5px solid transparent;transition:transform .25s,box-shadow .25s,border-color .25s,background .25s;}
+.fact-card:hover{transform:translateY(-4px);box-shadow:0 10px 30px rgba(0,0,0,.1);border-color:var(--b200);background:var(--b50);}
+.fact-icon{width:44px;height:44px;border-radius:var(--r-sm);background:var(--b50);display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--b600);flex-shrink:0;transition:transform .25s,background .25s;}
+.fact-card:hover .fact-icon{transform:rotate(-8deg) scale(1.1);background:var(--b100);}
+.fact-card p{font-size:14.5px;color:var(--g800);line-height:1.6;}
+
+/* ── QUIZ ──────────────────────────────────── */
+.quiz-section{background:var(--b900);border-radius:var(--r-xl);padding:40px;color:#fff;position:relative;overflow:hidden;}
+.quiz-section::before{content:'?';font-family:'Playfair Display',serif;font-size:300px;font-weight:900;color:rgba(255,255,255,.03);position:absolute;right:-20px;top:-40px;pointer-events:none;}
+.quiz-header{display:flex;align-items:center;gap:14px;margin-bottom:28px;}
+.quiz-icon{width:48px;height:48px;background:rgba(55,138,221,.2);border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;font-size:24px;color:var(--b200);}
+.quiz-header h2{font-family:'Playfair Display',serif;font-size:26px;font-weight:600;color:#fff;}
+.quiz-header p{font-size:14px;color:var(--b200);}
+.quiz-progress{display:flex;gap:8px;margin-bottom:28px;}
+.qp-dot{width:32px;height:4px;border-radius:2px;background:rgba(255,255,255,.15);transition:background .4s;}
+.qp-dot.active{background:var(--b400);}
+.qp-dot.correct{background:var(--t400);}
+.qp-dot.wrong{background:var(--c400);}
+.quiz-q{font-size:20px;font-weight:500;color:#fff;margin-bottom:20px;min-height:60px;line-height:1.5;}
+.quiz-opts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px;}
+.quiz-opt{background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);border-radius:var(--r-md);padding:14px 18px;font-size:14.5px;color:var(--b100);cursor:pointer;text-align:left;font-family:'DM Sans',sans-serif;transition:background .2s,border-color .2s,transform .15s;}
+.quiz-opt:hover:not(:disabled){background:rgba(255,255,255,.13);border-color:rgba(255,255,255,.25);transform:translateY(-2px);}
+.quiz-opt.correct{background:rgba(29,158,117,.25);border-color:var(--t400);color:#fff;}
+.quiz-opt.wrong{background:rgba(216,90,48,.2);border-color:var(--c400);color:#fff;}
+.quiz-opt:disabled{cursor:default;transform:none;}
+.quiz-feedback{min-height:40px;font-size:15px;color:var(--b100);padding:0 4px;transition:opacity .3s;}
+.quiz-score{font-family:'DM Mono',monospace;font-size:14px;color:var(--b400);margin-top:8px;}
+.quiz-next{background:var(--b600);border:none;border-radius:var(--r-md);padding:12px 28px;color:#fff;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;transition:background .2s,transform .15s;margin-top:12px;display:none;}
+.quiz-next:hover{background:var(--b400);transform:translateY(-2px);}
+.quiz-result{text-align:center;padding:20px 0;display:none;}
+.quiz-result .big-score{font-family:'Playfair Display',serif;font-size:80px;font-weight:900;color:#fff;line-height:1;}
+.quiz-result p{font-size:17px;color:var(--b200);margin-top:10px;}
+.quiz-restart{background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.2);border-radius:var(--r-md);padding:10px 24px;color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;margin-top:20px;transition:background .2s;}
+.quiz-restart:hover{background:rgba(255,255,255,.18);}
+
+/* ── PERIODIC MINI ─────────────────────────── */
+.periodic-mini{display:grid;grid-template-columns:repeat(18,1fr);gap:3px;background:var(--g50);border-radius:var(--r-lg);padding:20px;overflow:hidden;}
+.pm-cell{aspect-ratio:1;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:600;color:rgba(0,0,0,.3);cursor:default;transition:transform .2s,background .2s;}
+.pm-cell.highlight{background:var(--b600);color:#fff;transform:scale(1.15);z-index:2;box-shadow:0 4px 12px rgba(24,95,165,.4);border-radius:4px;}
+.pm-cell.group4{background:var(--b100);color:var(--b800);}
+.pm-cell.empty{background:transparent;}
+
+/* ── FOOTER ────────────────────────────────── */
+footer{background:var(--b900);color:var(--b200);text-align:center;padding:36px 40px;font-size:13px;margin-top:0;}
+footer span{font-family:'DM Mono',monospace;color:var(--b400);}
+
+/* ── ANIMATIONS ────────────────────────────── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:translateY(0);}}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+
+/* ── RESPONSIVE ────────────────────────────── */
+@media(max-width:768px){
+  nav{padding:14px 20px;}
+  .nav-links{display:none;}
+  .hero{padding:90px 24px 60px;}
+  .hero-inner{grid-template-columns:1fr;gap:28px;text-align:center;}
+  .hero-h1{font-size:40px;}
+  .element-card{margin:0 auto;max-width:200px;}
+  .stats-inner{grid-template-columns:repeat(3,1fr);}
+  .main{padding:36px 20px;}
+  .card-header,.card-body{padding-left:24px;padding-right:24px;}
+  .props-grid,.facts-grid{grid-template-columns:1fr;}
+  .nat-grid,.usos-grid{grid-template-columns:1fr 1fr;}
+  .tio2-grid,.quiz-opts{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="ring"></div>
+
+<!-- NAV -->
+<nav id="nav">
+  <div class="nav-logo">Titanio <span>Ti · 22</span></div>
+  <div class="nav-links">
+    <a class="nav-link" onclick="scrollTo('sec-props')">Características</a>
+    <a class="nav-link" onclick="scrollTo('sec-hist')">Historia</a>
+    <a class="nav-link" onclick="scrollTo('sec-nat')">Naturaleza</a>
+    <a class="nav-link" onclick="scrollTo('sec-usos')">Usos</a>
+    <a class="nav-link" onclick="scrollTo('sec-oxido')">TiO₂</a>
+    <a class="nav-link" onclick="scrollTo('sec-quiz')">Quiz</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <canvas class="hero-canvas" id="heroCanvas"></canvas>
+  <div class="hero-inner">
+    <div class="element-card" id="elemCard">
+      <div class="ec-num">22</div>
+      <div class="ec-sym">Ti</div>
+      <div class="ec-name">Titanio</div>
+      <div class="ec-mass">47.87 u</div>
+    </div>
+    <div class="hero-text">
+      <div class="hero-tag-pre">Metal de transición · Grupo 4</div>
+      <h1 class="hero-h1">El metal<br/>de los <em>Titanes</em></h1>
+      <p class="hero-p">Liviano como el aluminio, resistente como el acero. El titanio es uno de los materiales más extraordinarios del planeta.</p>
+      <div class="hero-tags">
+        <span class="htag"><i class="ti ti-shield"></i>Alta resistencia</span>
+        <span class="htag"><i class="ti ti-heart-rate-monitor"></i>Biocompatible</span>
+        <span class="htag"><i class="ti ti-droplet-off"></i>Anti-corrosión</span>
+        <span class="htag"><i class="ti ti-magnet-off"></i>No magnético</span>
+        <span class="htag"><i class="ti ti-flame"></i>1668 °C fusión</span>
+      </div>
+    </div>
+  </div>
+  <div class="scroll-hint">
+    <span>Explorá</span>
+    <div class="scroll-arrow"></div>
+  </div>
+</section>
+
+<!-- STATS -->
+<div class="stats-bar">
+  <div class="stats-inner">
+    <div class="stat"><span class="stat-val" data-target="22" data-suffix="">0</span><span class="stat-label">Número atómico</span></div>
+    <div class="stat"><span class="stat-val">47.87 u</span><span class="stat-label">Masa atómica</span></div>
+    <div class="stat"><span class="stat-val" data-target="1668" data-suffix=" °C">0</span><span class="stat-label">Punto de fusión</span></div>
+    <div class="stat"><span class="stat-val" data-target="45" data-suffix="% más liviano">0</span><span class="stat-label">Vs el acero</span></div>
+    <div class="stat"><span class="stat-val" data-target="1791" data-suffix="">0</span><span class="stat-label">Año descubrimiento</span></div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- CARACTERÍSTICAS -->
+  <div class="card reveal" id="sec-props">
+    <div class="card-header">
+      <div class="ch-icon blue"><i class="ti ti-atom"></i></div>
+      <div>
+        <h2>Características</h2>
+        <p>Propiedades físicas y químicas principales</p>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="props-grid">
+        <div class="prop-item reveal delay-1"><i class="ti ti-droplet-off"></i><p>Muy resistente a la corrosión, incluso frente al agua de mar y ambientes salinos agresivos.</p></div>
+        <div class="prop-item teal reveal delay-2"><i class="ti ti-weight"></i><p>Más liviano que el acero, pesando aprox. un 45% menos, con resistencia similar o superior.</p></div>
+        <div class="prop-item amber reveal delay-3"><i class="ti ti-flame"></i><p>Punto de fusión muy alto: alrededor de 1668 °C. Soporta temperaturas extremas con estabilidad.</p></div>
+        <div class="prop-item coral reveal delay-4"><i class="ti ti-heart-rate-monitor"></i><p>Biocompatible: el cuerpo humano lo tolera excepcionalmente bien. Rara vez es rechazado.</p></div>
+        <div class="prop-item purple reveal delay-5"><i class="ti ti-magnet-off"></i><p>No es magnético. Ideal para entornos con campos electromagnéticos sensibles.</p></div>
+        <div class="prop-item reveal delay-6"><i class="ti ti-shield-check"></i><p>Forma espontáneamente una capa protectora de óxido que evita su deterioro.</p></div>
+      </div>
+      <div class="compare-section">
+        <h3 class="compare-h3"><i class="ti ti-chart-bar"></i>Comparación de peso relativo</h3>
+        <div class="bar-row">
+          <span class="bar-name">Acero</span>
+          <div class="bar-track"><div class="bar-fill" data-width="100" style="background:var(--g400);"><span class="bar-pct">100%</span></div></div>
+          <span class="bar-note">Referencia base</span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-name">Titanio</span>
+          <div class="bar-track"><div class="bar-fill" data-width="55" style="background:var(--b600);"><span class="bar-pct">~55%</span></div></div>
+          <span class="bar-note">Resistencia ≥ acero</span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-name">Aluminio</span>
+          <div class="bar-track"><div class="bar-fill" data-width="34" style="background:var(--g200);"><span class="bar-pct">~34%</span></div></div>
+          <span class="bar-note">Menor resistencia</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORIA -->
+  <div class="card reveal" id="sec-hist">
+    <div class="card-header">
+      <div class="ch-icon amber"><i class="ti ti-clock-history"></i></div>
+      <div>
+        <h2>Historia y descubrimiento</h2>
+        <p>Del mineral desconocido a la producción industrial</p>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="timeline">
+        <div class="tl-event reveal-left delay-1">
+          <div class="tl-dot"></div>
+          <div class="tl-year">1791 · Cornualles, Inglaterra</div>
+          <div class="tl-title">Descubrimiento por William Gregor</div>
+          <div class="tl-desc">El sacerdote y mineralogista inglés William Gregor encuentra un mineral negro en arenas locales y detecta que contiene un metal desconocido al que llama "menachanita".</div>
+        </div>
+        <div class="tl-event reveal-left delay-2">
+          <div class="tl-dot"></div>
+          <div class="tl-year">1795 · Alemania</div>
+          <div class="tl-title">Klaproth le da el nombre "Titanio"</div>
+          <div class="tl-desc">El químico alemán Martin Heinrich Klaproth redescubre el elemento de forma independiente y lo bautiza "titanio", en honor a los Titanes de la mitología griega: seres de fuerza sobrehumana.</div>
+        </div>
+        <div class="tl-event reveal-left delay-3">
+          <div class="tl-dot"></div>
+          <div class="tl-year">Siglo XX · Todo el mundo</div>
+          <div class="tl-title">Desarrollo de métodos industriales</div>
+          <div class="tl-desc">Durante décadas fue casi imposible obtener titanio puro. Recién en el siglo XX se desarrollaron procesos eficientes para su producción a escala industrial.</div>
+        </div>
+        <div class="tl-event reveal-left delay-4">
+          <div class="tl-dot"></div>
+          <div class="tl-year">Década de 1930 · Gran salto</div>
+          <div class="tl-title">El Proceso Kroll lo cambia todo</div>
+          <div class="tl-desc">El metalurgista Wilhelm Kroll desarrolla el proceso que lleva su nombre, que permite por primera vez producir titanio puro a gran escala, abriendo la puerta a todas sus aplicaciones modernas.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NATURALEZA -->
+  <div class="card reveal" id="sec-nat">
+    <div class="card-header">
+      <div class="ch-icon teal"><i class="ti ti-plant"></i></div>
+      <div>
+        <h2>Presencia en la naturaleza</h2>
+        <p>Dónde y cómo se encuentra el titanio en el planeta</p>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="nat-grid">
+        <div class="nat-block reveal delay-1">
+          <h4><i class="ti ti-crystal-ball"></i>Minerales principales</h4>
+          <ul>
+            <li><span class="chip blue"></span>Rutilo (TiO₂)</li>
+            <li><span class="chip blue"></span>Ilmenita (FeTiO₃)</li>
+          </ul>
+        </div>
+        <div class="nat-block reveal delay-2">
+          <h4><i class="ti ti-mountain"></i>Ambientes geológicos</h4>
+          <ul>
+            <li><span class="chip teal"></span>Rocas ígneas</li>
+            <li><span class="chip teal"></span>Arenas minerales</li>
+            <li><span class="chip teal"></span>Suelos</li>
+            <li><span class="chip teal"></span>Meteoritos</li>
+          </ul>
+        </div>
+        <div class="nat-block reveal delay-3">
+          <h4><i class="ti ti-world"></i>Países con grandes reservas</h4>
+          <ul>
+            <li><span class="chip purple"></span>Australia</li>
+            <li><span class="chip purple"></span>Sudáfrica</li>
+            <li><span class="chip purple"></span>India</li>
+            <li><span class="chip purple"></span>China · Canadá</li>
+          </ul>
+        </div>
+      </div>
+      <div class="abund reveal delay-4">
+        <i class="ti ti-info-circle"></i>
+        El titanio es uno de los elementos más abundantes de la corteza terrestre. También aparece en pequeñas cantidades en plantas, agua, animales y el cuerpo humano, aunque nunca en estado puro.
+      </div>
+    </div>
+  </div>
+
+  <!-- USOS -->
+  <div class="card reveal" id="sec-usos">
+    <div class="card-header">
+      <div class="ch-icon coral"><i class="ti ti-tool"></i></div>
+      <div>
+        <h2>Usos principales</h2>
+        <p>Tocá cada sector para ver los detalles</p>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="usos-grid">
+        <div class="uso-card reveal delay-1" onclick="toggleUso(this)">
+          <div class="uc-top">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+              <div class="uc-icon-wrap blue"><i class="ti ti-plane"></i></div>
+              <div class="uso-toggle"><i class="ti ti-chevron-down"></i></div>
+            </div>
+            <div class="uc-name">Industria aeroespacial</div>
+            <div class="uc-short">Aviones, cohetes y naves espaciales</div>
+          </div>
+          <div class="uc-detail"><div class="uc-detail-inner"><ul>
+            <li>Fuselajes y estructuras de aviones</li>
+            <li>Turbinas de motores a reacción</li>
+            <li>Cohetes y naves espaciales</li>
+            <li>Liviano, soporta altas temperaturas y resiste corrosión</li>
+          </ul></div></div>
+        </div>
+        <div class="uso-card reveal delay-2" onclick="toggleUso(this)">
+          <div class="uc-top">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+              <div class="uc-icon-wrap teal"><i class="ti ti-stethoscope"></i></div>
+              <div class="uso-toggle"><i class="ti ti-chevron-down"></i></div>
+            </div>
+            <div class="uc-name">Medicina</div>
+            <div class="uc-short">Implantes y prótesis</div>
+          </div>
+          <div class="uc-detail"><div class="uc-detail-inner"><ul>
+            <li>Prótesis de cadera y rodilla</li>
+            <li>Implantes dentales</li>
+            <li>Tornillos y placas óseas</li>
+            <li>Marcapasos y dispositivos cardíacos</li>
+          </ul></div></div>
+        </div>
+        <div class="uso-card reveal delay-3" onclick="toggleUso(this)">
+          <div class="uc-top">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+              <div class="uc-icon-wrap amber"><i class="ti ti-droplet"></i></div>
+              <div class="uso-toggle"><i class="ti ti-chevron-down"></i></div>
+            </div>
+            <div class="uc-name">Naval y química</div>
+            <div class="uc-short">Resistencia en ambientes extremos</div>
+          </div>
+          <div class="uc-detail"><div class="uc-detail-inner"><ul>
+            <li>Tuberías para fluidos corrosivos</li>
+            <li>Reactores y tanques químicos</li>
+            <li>Plataformas marinas</li>
+            <li>Plantas de desalinización</li>
+          </ul></div></div>
+        </div>
+        <div class="uso-card reveal delay-4" onclick="toggleUso(this)">
+          <div class="uc-top">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+              <div class="uc-icon-wrap coral"><i class="ti ti-bike"></i></div>
+              <div class="uso-toggle"><i class="ti ti-chevron-down"></i></div>
+            </div>
+            <div class="uc-name">Objetos cotidianos</div>
+            <div class="uc-short">Deporte y diseño de alto rendimiento</div>
+          </div>
+          <div class="uc-detail"><div class="uc-detail-inner"><ul>
+            <li>Bicicletas deportivas de competición</li>
+            <li>Relojes y joyería de lujo</li>
+            <li>Marcos de gafas</li>
+            <li>Palos de golf</li>
+          </ul></div></div>
+        </div>
+        <div class="uso-card reveal delay-5" onclick="toggleUso(this)">
+          <div class="uc-top">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+              <div class="uc-icon-wrap purple"><i class="ti ti-palette"></i></div>
+              <div class="uso-toggle"><i class="ti ti-chevron-down"></i></div>
+            </div>
+            <div class="uc-name">Pigmentos y pinturas</div>
+            <div class="uc-short">TiO₂ como pigmento blanco universal</div>
+          </div>
+          <div class="uc-detail"><div class="uc-detail-inner"><ul>
+            <li>Pinturas blancas de alta opacidad</li>
+            <li>Cosméticos y pasta dental</li>
+            <li>Protector solar UV</li>
+            <li>Papel, plásticos y cerámicas</li>
+          </ul></div></div>
+        </div>
+        <div class="uso-card reveal delay-6" onclick="toggleUso(this)">
+          <div class="uc-top">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+              <div class="uc-icon-wrap blue"><i class="ti ti-rocket"></i></div>
+              <div class="uso-toggle"><i class="ti ti-chevron-down"></i></div>
+            </div>
+            <div class="uc-name">Exploración espacial</div>
+            <div class="uc-short">Relación resistencia/peso inigualable</div>
+          </div>
+          <div class="uc-detail"><div class="uc-detail-inner"><ul>
+            <li>Satélites y sondas espaciales</li>
+            <li>Aviones supersónicos</li>
+            <li>Cascos de submarinos</li>
+            <li>Misiones NASA y ESA</li>
+          </ul></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OXIDO -->
+  <div class="card reveal" id="sec-oxido">
+    <div class="card-header">
+      <div class="ch-icon blue"><i class="ti ti-flask"></i></div>
+      <div>
+        <h2>El óxido del titanio</h2>
+        <p>TiO₂: un compuesto con decenas de aplicaciones</p>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="reaction-box" id="reactionBox">
+        <div class="reaction-eq">Ti + O<sub>2</sub> → TiO<sub>2</sub></div>
+        <div class="reaction-label">Titanio + Oxígeno → Dióxido de titanio</div>
+        <div class="atoms-anim">
+          <div class="atom ti">Ti</div>
+          <div class="atom op">+</div>
+          <div class="atom ox">O₂</div>
+          <div class="atom op">→</div>
+          <div class="atom ar">TiO₂</div>
+        </div>
+      </div>
+      <p style="font-size:15px;color:var(--g600);margin-bottom:4px;line-height:1.65;">El titanio reacciona con el oxígeno formando dióxido de titanio (TiO₂), uno de los compuestos industriales más versátiles del mundo. Su capa de óxido se forma espontáneamente y es transparente — por eso el titanio no "se pone marrón" como el hierro.</p>
+      <div class="tio2-grid">
+        <div class="tio2-item reveal delay-1"><i class="ti ti-brush"></i><p>Pinturas blancas</p></div>
+        <div class="tio2-item reveal delay-2"><i class="ti ti-sun"></i><p>Protector solar UV</p></div>
+        <div class="tio2-item reveal delay-3"><i class="ti ti-sparkles"></i><p>Cosméticos y pasta dental</p></div>
+        <div class="tio2-item reveal delay-4"><i class="ti ti-file"></i><p>Papel y plásticos</p></div>
+        <div class="tio2-item reveal delay-1"><i class="ti ti-cube"></i><p>Cerámicas y vidrios</p></div>
+        <div class="tio2-item reveal delay-2"><i class="ti ti-solar-panel"></i><p>Paneles solares</p></div>
+        <div class="tio2-item reveal delay-3"><i class="ti ti-wash"></i><p>Superficies autolimpiantes</p></div>
+        <div class="tio2-item reveal delay-4"><i class="ti ti-pill"></i><p>Industria farmacéutica</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DATOS CURIOSOS -->
+  <div class="card reveal">
+    <div class="card-header">
+      <div class="ch-icon purple"><i class="ti ti-bulb"></i></div>
+      <div>
+        <h2>Datos curiosos</h2>
+        <p>Lo que hace al titanio verdaderamente extraordinario</p>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="facts-grid">
+        <div class="fact-card reveal delay-1"><div class="fact-icon"><i class="ti ti-submarine"></i></div><p>Es tan resistente que se usa en submarinos militares y aviones supersónicos que soportan condiciones extremas.</p></div>
+        <div class="fact-card reveal delay-2"><div class="fact-icon"><i class="ti ti-sun"></i></div><p>El TiO₂ bloquea eficazmente los rayos UV, por eso es el ingrediente activo en la mayoría de los protectores solares.</p></div>
+        <div class="fact-card reveal delay-3"><div class="fact-icon"><i class="ti ti-coin"></i></div><p>Aunque es muy abundante en la corteza terrestre, producirlo en estado puro es caro y complejo.</p></div>
+        <div class="fact-card reveal delay-4"><div class="fact-icon"><i class="ti ti-shape"></i></div><p>Algunas aleaciones tienen "memoria de forma": recuperan su figura original al calentarse después de deformarse.</p></div>
+        <div class="fact-card reveal delay-5"><div class="fact-icon"><i class="ti ti-rocket"></i></div><p>Su relación resistencia/peso lo convierte en el material predilecto de la NASA para misiones críticas.</p></div>
+        <div class="fact-card reveal delay-6"><div class="fact-icon"><i class="ti ti-palette"></i></div><p>Mediante anodización puede adquirir colores brillantes como azul, dorado o violeta sin necesidad de pintura.</p></div>
+        <div class="fact-card reveal delay-1"><div class="fact-icon"><i class="ti ti-shield"></i></div><p>A diferencia del hierro, el titanio no se oxida visiblemente: su capa de TiO₂ es transparente y se autorrepara.</p></div>
+        <div class="fact-card reveal delay-2"><div class="fact-icon"><i class="ti ti-dna"></i></div><p>El cuerpo humano tolera el titanio mejor que casi cualquier otro metal. Es el material más biocompatible conocido.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUIZ -->
+  <div class="quiz-section reveal" id="sec-quiz">
+    <div class="quiz-header">
+      <div class="quiz-icon"><i class="ti ti-help"></i></div>
+      <div>
+        <h2>Quiz — ¿Cuánto aprendiste?</h2>
+        <p>Poné a prueba tu conocimiento sobre el titanio</p>
+      </div>
+    </div>
+    <div id="quizGame">
+      <div class="quiz-progress" id="quizProgress"></div>
+      <div class="quiz-q" id="quizQ"></div>
+      <div class="quiz-opts" id="quizOpts"></div>
+      <div class="quiz-feedback" id="quizFeedback"></div>
+      <div class="quiz-score" id="quizScore"></div>
+      <button class="quiz-next" id="quizNext" onclick="nextQ()">Siguiente →</button>
+    </div>
+    <div class="quiz-result" id="quizResult">
+      <div class="big-score" id="finalScore"></div>
+      <p id="finalMsg"></p>
+      <button class="quiz-restart" onclick="startQuiz()">Jugar de nuevo</button>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  <p>Lapbook Interactivo — <span>Titanio (Ti)</span> · Número atómico 22 · Metal de transición · Masa atómica 47.87 u</p>
+</footer>
+
+<script>
+// ── CURSOR ──────────────────────────────────────────────────
+const cur=document.getElementById('cursor'),ring=document.getElementById('ring');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{
+  mx=e.clientX;my=e.clientY;
+  cur.style.transform=`translate(${mx-6}px,${my-6}px)`;
+});
+function animRing(){
+  rx+=(mx-rx)*.12;ry+=(my-ry)*.12;
+  ring.style.transform=`translate(${rx-18}px,${ry-18}px)`;
+  requestAnimationFrame(animRing);
+}animRing();
+document.querySelectorAll('button,a,.uso-card,.tio2-item,.fact-card').forEach(el=>{
+  el.addEventListener('mouseenter',()=>{cur.style.transform+=' scale(2)';ring.style.opacity='0';});
+  el.addEventListener('mouseleave',()=>{cur.style.transform=cur.style.transform.replace(' scale(2)','');ring.style.opacity='.5';});
+});
+
+// ── PROGRESS BAR ────────────────────────────────────────────
+const pb=document.getElementById('progress');
+window.addEventListener('scroll',()=>{
+  const s=document.documentElement.scrollTop,h=document.documentElement.scrollHeight-window.innerHeight;
+  pb.style.width=(s/h*100)+'%';
+  document.getElementById('nav').classList.toggle('scrolled',s>60);
+});
+
+// ── NAV SCROLL ───────────────────────────────────────────────
+function scrollTo(id){document.getElementById(id)?.scrollIntoView({behavior:'smooth',block:'start'});}
+
+// ── HERO CANVAS PARTICLES ────────────────────────────────────
+const canvas=document.getElementById('heroCanvas');
+const ctx=canvas.getContext('2d');
+let pts=[];
+function resizeCanvas(){canvas.width=canvas.offsetWidth;canvas.height=canvas.offsetHeight;}
+resizeCanvas();window.addEventListener('resize',()=>{resizeCanvas();initPts();});
+function initPts(){
+  pts=[];
+  for(let i=0;i<80;i++){
+    pts.push({
+      x:Math.random()*canvas.width,y:Math.random()*canvas.height,
+      vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,
+      r:Math.random()*2+1,o:Math.random()*.5+.1
+    });
+  }
+}
+initPts();
+function drawPts(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  pts.forEach(p=>{
+    p.x+=p.vx;p.y+=p.vy;
+    if(p.x<0)p.x=canvas.width;if(p.x>canvas.width)p.x=0;
+    if(p.y<0)p.y=canvas.height;if(p.y>canvas.height)p.y=0;
+    ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+    ctx.fillStyle=`rgba(55,138,221,${p.o})`;ctx.fill();
+  });
+  pts.forEach((p,i)=>{
+    for(let j=i+1;j<pts.length;j++){
+      const d=Math.hypot(p.x-pts[j].x,p.y-pts[j].y);
+      if(d<120){
+        ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(pts[j].x,pts[j].y);
+        ctx.strokeStyle=`rgba(55,138,221,${.15*(1-d/120)})`;ctx.lineWidth=.5;ctx.stroke();
+      }
+    }
+  });
+  requestAnimationFrame(drawPts);
+}
+drawPts();
+
+// ── STAT COUNTERS ────────────────────────────────────────────
+function animCount(el){
+  const target=+el.dataset.target,suffix=el.dataset.suffix||'',dur=1400;
+  let start=null;
+  function step(ts){
+    if(!start)start=ts;
+    const prog=Math.min((ts-start)/dur,1);
+    const ease=1-Math.pow(1-prog,3);
+    el.textContent=Math.round(target*ease)+suffix;
+    if(prog<1)requestAnimationFrame(step);
+  }requestAnimationFrame(step);
+}
+const statsObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting){document.querySelectorAll('[data-target]').forEach(animCount);statsObs.disconnect();}});
+},{threshold:.5});
+statsObs.observe(document.querySelector('.stats-bar'));
+
+// ── BAR ANIMATIONS ──────────────────────────────────────────
+const barObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      e.target.querySelectorAll('.bar-fill').forEach(b=>{
+        setTimeout(()=>{b.style.width=b.dataset.width+'%';},200);
+      });barObs.unobserve(e.target);
+    }
+  });
+},{threshold:.3});
+document.querySelectorAll('.compare-section').forEach(s=>barObs.observe(s));
+
+// ── SCROLL REVEAL ────────────────────────────────────────────
+const revObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');}});
+},{threshold:.08,rootMargin:'0px 0px -40px 0px'});
+document.querySelectorAll('.reveal,.reveal-left,.reveal-right').forEach(el=>revObs.observe(el));
+
+// ── USOS TOGGLE ──────────────────────────────────────────────
+function toggleUso(card){
+  const detail=card.querySelector('.uc-detail');
+  const isOpen=card.classList.contains('open');
+  document.querySelectorAll('.uso-card').forEach(c=>{
+    c.classList.remove('open');c.querySelector('.uc-detail').classList.remove('open');
+  });
+  if(!isOpen){card.classList.add('open');detail.classList.add('open');}
+}
+
+// ── QUIZ ─────────────────────────────────────────────────────
+const questions=[
+  {q:'¿Quién descubrió el titanio en 1791?',opts:['Martin Klaproth','Wilhelm Kroll','William Gregor','Humphry Davy'],ans:2,fb:'William Gregor lo encontró en arenas de Cornualles, Inglaterra.'},
+  {q:'¿Cuál es el número atómico del titanio?',opts:['14','22','28','40'],ans:1,fb:'Ti tiene número atómico 22 y pertenece al grupo 4 de metales de transición.'},
+  {q:'¿Qué proceso permitió producir titanio puro a escala industrial?',opts:['Proceso Bessemer','Proceso Hall-Héroult','Proceso Kroll','Proceso Bayer'],ans:2,fb:'El Proceso Kroll, de la década de 1930, fue el gran avance industrial.'},
+  {q:'¿Cuál es el punto de fusión del titanio?',opts:['800 °C','1250 °C','1668 °C','2100 °C'],ans:2,fb:'El titanio funde a alrededor de 1668 °C, mucho más que el acero común.'},
+  {q:'¿Qué compuesto forma el titanio al reaccionar con el oxígeno?',opts:['TiCl₄','TiN','TiO₂','Ti₂O₃'],ans:2,fb:'Ti + O₂ → TiO₂ (dióxido de titanio), uno de los pigmentos más usados del mundo.'},
+  {q:'¿Cuánto pesa el titanio comparado con el acero?',opts:['El mismo peso','35% menos','45% menos','60% menos'],ans:2,fb:'El titanio pesa aproximadamente un 45% menos que el acero, con resistencia similar.'},
+  {q:'¿Por qué se usa titanio en implantes médicos?',opts:['Es el más barato','Es magnético','Es biocompatible','Es transparente'],ans:2,fb:'El cuerpo humano tolera el titanio excepcionalmente bien, rara vez lo rechaza.'},
+  {q:'¿En qué mineral se encuentra principalmente el titanio?',opts:['Galena','Bauxita','Rutilo','Hematita'],ans:2,fb:'El rutilo (TiO₂) y la ilmenita son los minerales más importantes de titanio.'},
+];
+let qi=0,score=0,answered=false;
+function startQuiz(){
+  qi=0;score=0;answered=false;
+  document.getElementById('quizResult').style.display='none';
+  document.getElementById('quizGame').style.display='block';
+  document.getElementById('quizNext').style.display='none';
+  renderQ();
+}
+function renderQ(){
+  const q=questions[qi];
+  const prog=document.getElementById('quizProgress');
+  prog.innerHTML=questions.map((_,i)=>`<div class="qp-dot${i===qi?' active':i<qi?' correct':''}" id="dot${i}"></div>`).join('');
+  document.getElementById('quizQ').textContent=q.q;
+  document.getElementById('quizFeedback').textContent='';
+  document.getElementById('quizScore').textContent='';
+  document.getElementById('quizNext').style.display='none';
+  answered=false;
+  document.getElementById('quizOpts').innerHTML=q.opts.map((o,i)=>
+    `<button class="quiz-opt" onclick="answer(this,${i})">${o}</button>`).join('');
+}
+function answer(btn,idx){
+  if(answered)return;answered=true;
+  const q=questions[qi];
+  const opts=document.querySelectorAll('.quiz-opt');
+  opts.forEach(o=>o.disabled=true);
+  opts[q.ans].classList.add('correct');
+  const fb=document.getElementById('quizFeedback');
+  const dot=document.getElementById('dot'+qi);
+  if(idx===q.ans){
+    score++;btn.classList.add('correct');
+    fb.textContent='✓ ¡Correcto! '+q.fb;fb.style.color='#1D9E75';
+    if(dot)dot.classList.add('correct');
+  } else {
+    btn.classList.add('wrong');
+    fb.textContent='✗ No es esa. '+q.fb;fb.style.color='#D85A30';
+    if(dot){dot.classList.remove('active');dot.classList.add('wrong');}
+  }
+  document.getElementById('quizScore').textContent=`Puntaje: ${score}/${qi+1}`;
+  document.getElementById('quizNext').style.display='inline-block';
+  document.getElementById('quizNext').textContent=qi<questions.length-1?'Siguiente →':'Ver resultado';
+}
+function nextQ(){
+  qi++;
+  if(qi>=questions.length){showResult();return;}
+  renderQ();
+}
+function showResult(){
+  document.getElementById('quizGame').style.display='none';
+  const res=document.getElementById('quizResult');
+  res.style.display='block';
+  document.getElementById('finalScore').textContent=`${score}/${questions.length}`;
+  const msgs=['Seguí estudiando 📚','Bien, pero podés mejorar 💪','¡Muy bien! Sabés bastante 🎯','¡Excelente! Sos un experto del titanio 🏆'];
+  const idx=score<=2?0:score<=4?1:score<=6?2:3;
+  document.getElementById('finalMsg').textContent=msgs[idx];
+}
+startQuiz();
+</script>
+</body>
+</html>
